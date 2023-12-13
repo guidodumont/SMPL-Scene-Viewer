@@ -43,7 +43,7 @@ class ImagWindow(base_gui):
 
     KPTS_2D = None
 
-    def __init__(self, width=1280, height=768, is_remote=False, name='MyWindow'):
+    def __init__(self, width=1280, height=768, is_remote=False, name="SMPL-Scene-Viewer"):
         super(ImagWindow, self).__init__(width, height, is_remote, name)
         self.tracked_frame = {}
         self.remote = is_remote

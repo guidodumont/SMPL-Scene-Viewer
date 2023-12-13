@@ -16,7 +16,8 @@ import numpy as np
 import pickle as pkl
 import os
 import open3d as o3d
-from scipy.spatial.transform import Rotation as R
+import json
+import scipy
 import matplotlib.pyplot as plt
 import shutil
 import paramiko
@@ -274,6 +275,32 @@ class Data_loader(object):
         else:
             dirs = os.listdir(folder)
         return dirs
+    
+    def load_3d_bboxes(self, file_name, classID = "Pedestrian"):
+        line_sets = []
+        if file_name.endswith(".json"):
+            with open(file_name, 'r') as file:
+                data = json.load(file)
+            
+            for bbox in data["3dbbox"]:
+                if bbox["classId"] == classID:
+                    center = np.array([bbox["cX"], bbox["cY"], bbox["cZ"]])
+                    rotation = np.array([bbox["r"], bbox["p"], bbox["y"]])
+                    R = scipy.spatial.transform.Rotation.from_euler("xyz", rotation, degrees=False).as_matrix()
+                    size = np.array([bbox["l"], bbox["w"], bbox["h"]])
+                    
+                    bbox = o3d.geometry.OrientedBoundingBox(center=center, R=R, extent=size)
+                    line_set = o3d.geometry.LineSet.create_from_oriented_bounding_box(bbox)
+                    line_sets.append(line_set)
+                    
+            # Merge LineSets into a single LineSet
+            bboxes = o3d.geometry.LineSet()
+            for line_set in line_sets:
+                bboxes += line_set
+            bboxes.paint_uniform_color(np.array([1, 0, 0]))
+        
+        return bboxes
+        
 
     def load_point_cloud(self, file_name, pointcloud = None, position = None, cmap='plasma'):
         """

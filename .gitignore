@@ -140,3 +140,6 @@ vis_data/
 interactive.ipynb
 *_test*
 .*.png
+
+test.py
+workflow.txt
