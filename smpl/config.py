@@ -2,8 +2,8 @@
 # @Author  : Zhang.Jingyi
 
 """
-This file contains definitions of useful data structures and the paths 
-for the datasets and data files necessary to run the code.
+This file contains definitions of useful data structures and the paths
+for the data and data files necessary to run the code.
 """
 
 import os

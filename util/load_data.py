@@ -21,10 +21,11 @@ import scipy
 import matplotlib.pyplot as plt
 import shutil
 import paramiko
-# import config
+import torch
 import cv2
 
 from util import pypcd
+from smpl.smpl import SMPL
 
 view = {
 	"trajectory" : 
@@ -300,7 +301,44 @@ class Data_loader(object):
             bboxes.paint_uniform_color(np.array([1, 0, 0]))
         
         return bboxes
+    
+    def transform_points(self, source_points: np.ndarray, transform: np.ndarray) -> np.ndarray:
+        if source_points.shape[1] == 3:
+            source_points = np.hstack((source_points, np.ones((source_points.shape[0], 1))))
         
+        target_points = np.zeros(source_points.shape)
+        for i in range(source_points.shape[0]):
+            target_points[i] = np.dot(transform, source_points[i])
+        
+        return target_points[:, :3]
+    
+    def load_human_mesh_data(self, file_name):
+        data = np.load(file_name)
+        poses = data["body_pose"]
+        betas = data["betas"]
+        trans = data["global_t"]
+        
+        trans_lidar2cam = np.array([[-0.0087265, -0.9999619,  0.0000000,0.03], [-0.1561634,  0.0013628, -0.9877303,-0.05], [0.9876927, -0.0086194, -0.1561694,0], [0, 0, 0, 1]])
+        meshes = []
+        for pose, beta, t in zip(poses, betas, trans):
+            smpl_model = SMPL()
+            pose = torch.tensor(pose.reshape(1, -1))
+            beta = torch.tensor(beta.reshape(1, -1))
+            vertices = smpl_model(pose=pose, beta=beta).cpu().numpy()[0]
+            vertices += t
+            
+            vertices = self.transform_points(source_points=vertices, transform=trans_lidar2cam.T)
+            
+            mesh = o3d.io.read_triangle_mesh("/home/guido/Documents/human-shape-estimation/SMPL-Scene-Viewer/smpl/sample.ply")
+            mesh.vertex_colors = o3d.utility.Vector3dVector()
+            
+            mesh.vertices = o3d.utility.Vector3dVector(vertices)
+            mesh.vertex_normals = o3d.utility.Vector3dVector()
+            mesh.triangle_normals = o3d.utility.Vector3dVector()
+            mesh.compute_vertex_normals()
+            meshes.append(mesh)
+            
+        return meshes
 
     def load_point_cloud(self, file_name, pointcloud = None, position = None, cmap='plasma'):
         """
