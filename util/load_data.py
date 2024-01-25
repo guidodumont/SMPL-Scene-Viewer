@@ -329,7 +329,7 @@ class Data_loader(object):
             
             vertices = self.transform_points(source_points=vertices, transform=trans_lidar2cam.T)
             
-            mesh = o3d.io.read_triangle_mesh("/home/guido/Documents/human-shape-estimation/SMPL-Scene-Viewer/smpl/sample.ply")
+            mesh = o3d.io.read_triangle_mesh(os.path.join(os.path.dirname(__file__), "../smpl", 'sample.ply'))
             mesh.vertex_colors = o3d.utility.Vector3dVector()
             
             mesh.vertices = o3d.utility.Vector3dVector(vertices)

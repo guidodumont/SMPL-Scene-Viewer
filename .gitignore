@@ -129,6 +129,7 @@ dmypy.json
 .pyre/
 
 .vscode/
+.idea/
 /temp*
 demo_scene_assets/  
 vis_data/

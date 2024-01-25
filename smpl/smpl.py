@@ -61,8 +61,7 @@ def rodrigues(theta):
 
 class SMPL(nn.Module):
 
-    def __init__(self, 
-                 gender='male'):
+    def __init__(self, gender='male'):
         """
         Args:
             center_idx: index of center joint in our computations,
@@ -71,11 +70,9 @@ class SMPL(nn.Module):
         """
         super(SMPL, self).__init__()
         if gender == 'male':
-            model_file = os.path.join(os.path.dirname(__file__), 'basicModel_m_lbs_10_207_0_v1.0.0.pkl') 
+            model_file = os.path.join(os.path.dirname(__file__), "SMPL_male_V1.pkl")
         elif gender == 'female':
-            model_file = os.path.join(os.path.dirname(__file__), 'basicModel_f_lbs_10_207_0_v1.0.0.pkl') 
-        elif gender == 'neutral':
-            model_file = os.path.join(os.path.dirname(__file__), 'basicModel_neutral_lbs_10_207_0_v1.0.0.pkl') 
+            model_file = os.path.join(os.path.dirname(__file__), "SMPL_female_V1.pkl")
         else:
             raise ValueError('Unknown gender: %s' % gender)
         
