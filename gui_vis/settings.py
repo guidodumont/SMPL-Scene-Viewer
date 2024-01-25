@@ -79,9 +79,20 @@ class Setting_panal(GUI_BASE):
     def __init__(self, width=1280, height=720, name='Settings'):
         super(Setting_panal, self).__init__(width, height, name)
         self.total_frames             = 1
+        
         self.tracking_list            = []
-        self.tracked_frame            = {}        
         self.tracking_foler           = None
+        
+        self.pointcloud_list = []
+        self.pointcloud_foler = None
+        
+        self.bbox_list                = []
+        self.bbox_folder              = None
+        
+        self.humans_list = []
+        self.humans_folder = None
+        
+        self.tracked_frame            = {}
         self._selected_geo            = 'sample'
         self.data_loader              = None
         self.stream_setting           = self.create_stream_settings()
@@ -435,7 +446,12 @@ class Setting_panal(GUI_BASE):
         self.window.set_needs_layout()
 
     def _list_dir(self, path):
-        self.tracking_foler = path
+        if "pointclouds" in path:
+            self.pointcloud_foler = path
+        elif "3d_bbox" in path:
+            self.bbox_folder = path
+        elif "smpl" in path:
+            self.humans_folder = path
         
         files = []
         try:
@@ -458,35 +474,46 @@ class Setting_panal(GUI_BASE):
         
         return files
 
-    def _loading_pcds(self, path=None):
+    def _loading_files(self, dir_path=None):
         self._on_show_skybox(False)
-        self._on_bg_color(gui.Color(0, 0, 0))
+        
+        # Remove ground plane and sample mesh
+        self._geo_list["ground_0"]["box"].checked = False
+        self._geo_list["sample"]["box"].checked = False
+        self._on_show_geometry(False)
+        
+        self._on_bg_color(gui.Color(0, 0, 0)) # Set background color to black
 
-        if path is None:
-            path = self.remote_info['folder'].strip()
-        pcd_paths = self._list_dir(path)
+        if dir_path is None:
+            dir_path = self.remote_info['folder'].strip()
+        paths = self._list_dir(dir_path)
 
-        self.tracking_list = []
+        file_list = []
 
-        for pcd_path in pcd_paths:
-            if pcd_path.endswith('.pcd'):
-                self.tracking_list.append(pcd_path)
+        # Sve all paths in the tracking_list
+        for path in paths:
+            if path.endswith('.pcd') or path.endswith('.bin') or path.endswith('.json') or path.endswith('.npz'):
+                file_list.append(path)
 
-        for pcd_path in pcd_paths:
-            if pcd_path.endswith('.bin'):
-                self.tracking_list.append(pcd_path)
-
-        if len(self.tracking_list) > 0:
+        if len(file_list) > 0:
             try:
-                self.tracking_list = sorted(self.tracking_list, key=lambda x: float(
-                    x.split('.')[0].replace('_', '.')))
+                file_list = sorted(file_list, key=lambda x: float(x.split('.')[0].replace('_', '.')))
             except:
-                self.tracking_list = sorted(self.tracking_list)
+                file_list = sorted(file_list)
 
             if not Setting_panal.PAUSE:
                 self.change_pause_status()
+                
+            if "3d_comp" in paths[0] and paths[0].endswith('.pcd'):
+                self.pointcloud_list += file_list
+            elif "3d_bbox" in paths[0] and paths[0].endswith('.json'):
+                self.bbox_list += file_list
+            elif paths[0].endswith('.npz'):
+                self.humans_list += file_list
+            elif paths[0].endswith('.pcd') or paths[0].endswith('.bin'):
+                self.tracking_list += file_list
 
-            self.warning_info(f"Pcd loaded from '{path}'", info_type='info')
+            self.warning_info(f"Pcd loaded from '{dir_path}'", info_type='info')
         
     
     def _set_tracking_step(self, value):
@@ -996,18 +1023,58 @@ class Setting_panal(GUI_BASE):
     def set_camera(self, new_ind, ind, pov):
         pass
 
+    def get_3d_bbox_data(self, index):
+        return self.data_loader.load_3d_bboxes(self.bbox_folder + '/' + self.bbox_list[index])
+    
+    def get_pointcloud_data(self, index):
+        return self.data_loader.load_point_cloud(self.pointcloud_foler + '/' + self.pointcloud_list[index])
+    
+    def get_human_mesh_data(self, index):
+        return self.data_loader.load_human_mesh_data(self.humans_folder + '/' + self.humans_list[index])
+    
     def get_tracking_data(self, index):
-        geomety = self.data_loader.load_point_cloud(self.tracking_foler + '/' + self.tracking_list[index])
-        return geomety
+        return self.data_loader.load_point_cloud(self.tracking_foler + '/' + self.tracking_list[index])
         
     def fetch_data(self, index):
-        # your function here
-        name = 'Tracking frame'
-        geometry = self.get_tracking_data(index)
-        if len(geometry.points) > 0 and name not in self._geo_list:
-            self.make_material(geometry, name, 'PointCloud', is_archive=False)
-            self._geo_list[name]['mat'].material.point_size = 8
-        return {name: geometry}
+        data = {}
+        
+        ##### your function here #####
+        if len(self.pointcloud_list) > 0:
+            name = 'PointCloud'
+            geometry = self.get_pointcloud_data(index)
+            if len(geometry.points) > 0 and name not in self._geo_list:
+                self.make_material(geometry, name, 'PointCloud', is_archive=False)
+                self._geo_list[name]['mat'].material.point_size = 8
+            data[name] = geometry
+            
+        if len(self.bbox_list) > 0:
+            name = "3D bboxes"
+            geometry = self.get_3d_bbox_data(index)
+            if name not in self._geo_list:
+                self.make_material(geometry, name, '3D bbox', is_archive=False)
+                self._geo_list[name]['mat'].material.point_size = 8
+            data[name] = geometry
+            
+        if len(self.humans_list) > 0:
+            geometries = self.get_human_mesh_data(index)
+            for i, geometry in enumerate(geometries):
+                name = "Human" + str(i)
+                if name not in self._geo_list:
+                    self.make_material(geometry, name, 'Human', is_archive=False)
+                    self._geo_list[name]['mat'].material.point_size = 8
+                data[name] = geometry
+            
+        ##### your function here #####
+        
+        if len(self.tracking_list) > 0:
+            name = 'Tracking frame'
+            geometry = self.get_tracking_data(index)
+            if len(geometry.points) > 0 and name not in self._geo_list:
+                self.make_material(geometry, name, 'PointCloud', is_archive=False)
+                self._geo_list[name]['mat'].material.point_size = 8
+            data[name] = geometry
+        
+        return data
 
     def update_data(self, data, initialized=True):
         def func():

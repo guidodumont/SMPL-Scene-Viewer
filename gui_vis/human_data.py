@@ -183,7 +183,7 @@ class HUMAN_DATA:
         self.humans = {}
         self.data_format = data_format
 
-    def load(self, filename):
+    def load_pkl_file(self, filename):
         data_loader = Data_loader(self.is_remote)
         try:
             self.humans = data_loader.load_pkl(filename)

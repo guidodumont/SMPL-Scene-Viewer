@@ -601,7 +601,7 @@ class AppWindow:
         self._scene.scene.scene.render_to_image(on_image)
 
     def update_geometry(self, geometry, name, mat=None, reset_bounding_box=False, archive=False, freeze=False):
-        self.add_geometry(geometry, name, mat, reset_bounding_box, archive, freeze) 
+        self.add_geometry(geometry, name, mat, reset_bounding_box, archive, freeze)
 
 
     def _make_remote_gui(self):

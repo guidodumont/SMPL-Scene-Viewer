@@ -12,10 +12,10 @@ import torch
 import torch.nn as nn
 import numpy as np
 import os
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
+# try:
+#     import cPickle as pickle
+# except ImportError:
+import pickle
 
 import smpl.config as cfg
 
@@ -78,7 +78,7 @@ class SMPL(nn.Module):
             model_file = os.path.join(os.path.dirname(__file__), 'basicModel_neutral_lbs_10_207_0_v1.0.0.pkl') 
         else:
             raise ValueError('Unknown gender: %s' % gender)
-
+        
         with open(model_file, 'rb') as f:
             smpl_model = pickle.load(f, encoding='iso-8859-1')
         J_regressor = smpl_model['J_regressor'].tocoo()

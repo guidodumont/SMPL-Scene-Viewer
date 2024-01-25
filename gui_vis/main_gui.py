@@ -138,7 +138,11 @@ class o3dvis(setting, Menu):
           filename: the path to the SMPL model
         """
         self.window.close_dialog()
-        self.Human_data.load(filename) 
+        if filename.endswith('.pkl'):
+            self.Human_data.load_pkl_file(filename)
+        elif os.path.isdir(filename):
+            self.Human_data.load_data(filename)
+            
         self.window.title = os.path.basename(filename)
         # camera settings
         cams = self.Human_data.set_cameras(offset_center = -0.2)
@@ -206,9 +210,9 @@ class o3dvis(setting, Menu):
             self.fetch_data = self.fetch_smpl
             self.add_thread(threading.Thread(target=self.thread))
 
-    def _loading_pcds(self, path=None):
-        super()._loading_pcds(path)
-        if len(self.tracking_list) > 0:
+    def _loading_files(self, path=None):
+        super()._loading_files(path)
+        if len(self.tracking_list) > 0 or len(self.pointcloud_list) or len(self.bbox_list) > 0 or len(self.humans_list) > 0:
             try:
                 start, end = self.Human_data.humans['frame_num'][0], self.Human_data.humans['frame_num'][-1]
                 self.tracking_list = self.tracking_list[start:end+1]
@@ -218,9 +222,9 @@ class o3dvis(setting, Menu):
                 self.frame_slider_bar.enabled = True
                 self.frame_edit.enabled = True
                 self.play_btn.enabled = True
-                self.total_frames = len(self.tracking_list)
+                self.total_frames = max(len(self.tracking_list), len(self.pointcloud_list), len(self.bbox_list), len(self.humans_list))
                 self.add_thread(threading.Thread(target=self.thread))
-                print(e)
+                # print(e)
 
     def update_smpl(self, data, initialized=True):
         """
@@ -245,9 +249,9 @@ class o3dvis(setting, Menu):
 
     def fetch_smpl(self, ind):
         """
-        It takes in a frame number, and returns a dictionary of all the data for that frame. 
+        It takes in a frame number, and returns a dictionary of all the data for that frame.
         
-        The data is stored in a dictionary called `fetched_data`. 
+        The data is stored in a dictionary called `fetched_data`.
         
         Args:
           ind: the index of the frame
@@ -381,12 +385,24 @@ class o3dvis(setting, Menu):
         if name is None:
             name = self.scene_name
 
-        try: 
+        try:
             gtype = geometry.get_geometry_type().name
         except Exception as e:
             self.remove_geometry(name)
             return
-        try: 
+        
+        # if isinstance(geometry, o3d.geometry.PointCloud):
+        #     gtype = 'PointCloud'
+        # elif isinstance(geometry, o3d.geometry.TriangleMesh):
+        #     gtype = 'TriangleMesh'
+        # elif isinstance(geometry, o3d.geometry.LineSet):
+        #     gtype = 'LineSet'
+        # elif isinstance(geometry, o3d.geometry.OrientedBoundingBox):
+        #     gtype = 'OrientedBoundingBox'
+        # else:
+        #     self.remove_geometry(name)
+            
+        try:
             if gtype == 'PointCloud' and not geometry.has_normals():
                 geometry.estimate_normals()
                 # geometry.normalize_normals()
@@ -553,6 +569,9 @@ class o3dvis(setting, Menu):
             color = [25/255, 1, 25/255, 1]
         elif 'sample' in name.lower():
             shader = settings.NORMALS
+        elif 'bbox' in name.lower():
+            shader = settings.LINE
+            color = [1, 0, 0, 1]
         else:
             shader = settings.LIT
 

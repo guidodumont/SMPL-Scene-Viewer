@@ -29,8 +29,10 @@ from .utils import generate_mesh
 isMacOS = (platform.system() == "Darwin")
 
 class Menu(GUI_BASE):
-    MENU_OPEN = 11
-    MENU_OPEN_REMOTE = 12
+    MENU_OPEN_PC = 10
+    MENU_OPEN_BBOX = 10
+    MENU_OPEN_SMPL = 11
+    # MENU_OPEN_REMOTE = 12
     MENU_EXPORT = 13
     MENU_QUIT = 14
     
@@ -72,10 +74,9 @@ class Menu(GUI_BASE):
                 
             # file menu
             file_menu = gui.Menu()
-            file_menu.add_item("Open 3D file...", Menu.MENU_SCENE)
-            file_menu.add_item("Open pcds folder...", Menu.MENU_OPEN)
-            file_menu.add_item("Open remote pcds folder...", Menu.MENU_OPEN_REMOTE)
-            # file_menu.add_item("Open smpl pkl", Menu.MENU_SMPL)
+            file_menu.add_item("Open pointcloud sequence...", Menu.MENU_OPEN_PC)
+            file_menu.add_item("Open bbox sequence...", Menu.MENU_OPEN_BBOX)
+            file_menu.add_item("Open SMPL sequence...", Menu.MENU_OPEN_SMPL)
             file_menu.add_item("Export Current Image...", Menu.MENU_EXPORT)
             if not isMacOS:
                 file_menu.add_separator()
@@ -133,8 +134,9 @@ class Menu(GUI_BASE):
         # menu item is activated.
 
         # menu for file loading
-        w.set_on_menu_item_activated(Menu.MENU_OPEN, self._on_pcd_folder)
-        w.set_on_menu_item_activated(Menu.MENU_OPEN_REMOTE, self._on_remote_pcd_folder)
+        w.set_on_menu_item_activated(Menu.MENU_OPEN_PC, self._on_pointcloud_sequence)
+        w.set_on_menu_item_activated(Menu.MENU_OPEN_BBOX, self._on_bbox_sequence)
+        w.set_on_menu_item_activated(Menu.MENU_OPEN_SMPL, self._on_smpl_sequence)
         w.set_on_menu_item_activated(Menu.MENU_EXPORT, self._on_menu_export)
         w.set_on_menu_item_activated(Menu.MENU_QUIT, self._on_menu_quit)
 
@@ -237,15 +239,33 @@ class Menu(GUI_BASE):
         filedlg.add_filter("", "All files")
         filedlg.set_on_cancel(self._on_file_dialog_cancel)
         filedlg.set_on_done(lambda x: self._on_filedlg_done(x, self._loading_imgs))
-        self.window.show_dialog(filedlg)  
-
-    def _on_pcd_folder(self):
+        self.window.show_dialog(filedlg)
+        
+    def _on_pointcloud_sequence(self):
         filedlg = gui.FileDialog(gui.FileDialog.OPEN_DIR, "Select file",
                                  self.window.theme)
         filedlg.add_filter(".pcd .ply", "Triangle mesh (.pcd, .ply)")
         filedlg.add_filter("", "All files")
         filedlg.set_on_cancel(self._on_file_dialog_cancel)
-        filedlg.set_on_done(lambda x: self._on_filedlg_done(x, self._loading_pcds))
+        filedlg.set_on_done(lambda x: self._on_filedlg_done(x, self._loading_files))
+        self.window.show_dialog(filedlg)
+        
+    def _on_bbox_sequence(self):
+        filedlg = gui.FileDialog(gui.FileDialog.OPEN_DIR, "Select file",
+                                 self.window.theme)
+        filedlg.add_filter(".pcd .ply", "Triangle mesh (.pcd, .ply)")
+        filedlg.add_filter("", "All files")
+        filedlg.set_on_cancel(self._on_file_dialog_cancel)
+        filedlg.set_on_done(lambda x: self._on_filedlg_done(x, self._loading_files))
+        self.window.show_dialog(filedlg)
+        
+    def _on_smpl_sequence(self):
+        filedlg = gui.FileDialog(gui.FileDialog.OPEN_DIR, "Select file",
+                                 self.window.theme)
+        filedlg.add_filter(".plz", "Triangle mesh (.plz)")
+        filedlg.add_filter("", "All files")
+        filedlg.set_on_cancel(self._on_file_dialog_cancel)
+        filedlg.set_on_done(lambda x: self._on_filedlg_done(x, self._loading_files))
         self.window.show_dialog(filedlg)
         
     def _on_filedlg_done(self, path, load_func=None):
@@ -254,8 +274,11 @@ class Menu(GUI_BASE):
         if load_func is not None:
             load_func(path)
 
-    def _loading_pcds(self, path):
+    def _loading_files(self, path):
         pass
+    
+    # def _loading_bboxes(self, path):
+    #     pass
 
     def _loading_imgs(self, path):
         pass
